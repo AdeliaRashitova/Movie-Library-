@@ -19,11 +19,12 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# Виртуальные окружения
-venv/
-ENV/
-env/
-.venv/
-.
+# JSON data (optional, if you want to exclude the data file)
+data/movies.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
