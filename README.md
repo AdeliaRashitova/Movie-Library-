@@ -1,19 +1,44 @@
-# Movie Library (Personal Movie Collection)
+
+# Weather Diary (Дневник погоды)
+---
 **Author:** Adelia Rashitova 
 **Repository:** [https://github.com/AdeliaRashitova/Movie-Library](https://github.com/AdeliaRashitova/Movie-Library)
-## Description
-A desktop GUI application built with Python and Tkinter for managing a personal movie collection.  
-Users can add, delete, filter, and view movies. Data is stored locally in JSON format, and input validation ensures correct year and rating values.
-## Features
-- Add movies with title, genre, year, rating (0–10)
-- View all movies in a sortable table
-- Filter by genre (case-insensitive partial match) and exact year
-- Delete selected movies
-- Persistent storage using JSON
-- Input validation (year = integer, rating 0–10)
-## Requirements
-- Python 3.6+
-- No external libraries required (uses only standard library: tkinter, json, os)
-## How to Run
+
+## Описание программы
+
+Weather Diary — это графическое приложение для ведения дневника наблюдений за погодой. Программа позволяет пользователям сохранять, просматривать и анализировать метеорологические данные в удобном интерфейсе.
+
+### Основные возможности
+
+- **Добавление записей** — сохранение информации о дате, температуре, описании погоды и наличии осадков
+- **Просмотр данных** — все записи отображаются в таблице с сортировкой по дате
+- **Фильтрация** — возможность отбора записей по дате и минимальной температуре
+- **Сохранение и загрузка** — данные автоматически сохраняются в JSON-файл и загружаются при запуске
+- **Валидация ввода** — проверка корректности формата даты, числового значения температуры и заполнения описания
+- **Управление записями** — удаление выбранных записей
+
+---
+
+## Технологии
+
+- **Python 3.8+** — язык программирования
+- **Tkinter** — стандартная библиотека для создания графического интерфейса
+- **JSON** — формат хранения данных
+- **Git** — система контроля версий
+
+---
+
+## Установка и запуск
+
+### Системные требования
+
+- Операционная система: Windows / macOS / Linux
+- Python версии 3.8 или выше
+
+### Инструкция по установке
+
+1. **Клонирование репозитория**
+
 ```bash
-python movie_library.py
+git clone https://github.com/ваш-username/weather-diary.git
+cd weather-diary
