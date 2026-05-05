@@ -1,168 +1,146 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
+import os
 
-MOVIES_FILE = 'movies.json'
+class MovieLibrary:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Movie Library")
+        self.movies = []
+        self.load_movies()
 
-def load_movies():
-    try:
-        with open(MOVIES_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            # Проверяем, что данные — это список
-            if isinstance(data, list):
-                return data
-            else:
-                messagebox.showwarning("Предупреждение", "Файл данных повреждён. Создаётся новый список.")
-                return []
-    except FileNotFoundError:
-        # Файл не найден — создаём пустой список
-        return []
-    except json.JSONDecodeError:
-        # Ошибка декодирования JSON (файл пустой или повреждён)
-        messagebox.showerror("Ошибка", "Файл данных повреждён или пуст. Создаётся новая библиотека.")
-        return []
+        self.create_widgets()
+        self.update_table()
 
-def save_movies(data):
-    with open(MOVIES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    def create_widgets(self):
+        # Поля ввода
+        tk.Label(self.root, text="Название").grid(row=0, column=0, padx=5, pady=5)
+        self.title_entry = tk.Entry(self.root)
+        self.title_entry.grid(row=0, column=1, padx=5, pady=5)
 
-def validate_input():
-    title = entry_title.get().strip()
-    genre = entry_genre.get().strip()
-    year = entry_year.get().strip()
-    rating = entry_rating.get().strip()
+        tk.Label(self.root, text="Жанр").grid(row=1, column=0, padx=5, pady=5)
+        self.genre_entry = tk.Entry(self.root)
+        self.genre_entry.grid(row=1, column=1, padx=5, pady=5)
 
-    if not title or not genre:
-        messagebox.showerror("Ошибка", "Название и жанр не должны быть пустыми.")
-        return False
+        tk.Label(self.root, text="Год выпуска").grid(row=2, column=0, padx=5, pady=5)
+        self.year_entry = tk.Entry(self.root)
+        self.year_entry.grid(row=2, column=1, padx=5, pady=5)
 
-    if not year.isdigit() or not (1800 <= int(year) <= 2100):
-        messagebox.showerror("Ошибка", "Год должен быть числом от 1800 до 2100.")
-        return False
+        tk.Label(self.root, text="Рейтинг (0–10)").grid(row=3, column=0, padx=5, pady=5)
+        self.rating_entry = tk.Entry(self.root)
+        self.rating_entry.grid(row=3, column=1, padx=5, pady=5)
 
-    try:
-        rating_float = float(rating)
-        if not (0 <= rating_float <= 10):
-            messagebox.showerror("Ошибка", "Рейтинг должен быть числом от 0 до 10.")
+        # Кнопка добавления
+        tk.Button(self.root, text="Добавить фильм", command=self.add_movie).grid(
+            row=4, column=0, columnspan=2, pady=10
+        )
+
+        # Фильтры
+        tk.Label(self.root, text="Фильтр по жанру").grid(row=5, column=0, padx=5, pady=5)
+        self.filter_genre = tk.Entry(self.root)
+        self.filter_genre.grid(row=5, column=1, padx=5, pady=5)
+
+        tk.Label(self.root, text="Фильтр по году").grid(row=6, column=0, padx=5, pady=5)
+        self.filter_year = tk.Entry(self.root)
+        self.filter_year.grid(row=6, column=1, padx=5, pady=5)
+
+        tk.Button(self.root, text="Применить фильтры", command=self.apply_filters).grid(
+            row=7, column=0, columnspan=2, pady=10
+        )
+
+        # Таблица
+        columns = ("Название", "Жанр", "Год", "Рейтинг")
+        self.tree = ttk.Treeview(self.root, columns=columns, show="headings")
+        for col in columns:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=120)
+        self.tree.grid(row=8, column=0, columnspan=2, padx=5, pady=5)
+
+    def validate_input(self, title, genre, year, rating):
+        if not title or not genre:
+            messagebox.showerror("Ошибка", "Название и жанр обязательны!")
             return False
-    except ValueError:
-        messagebox.showerror("Ошибка", "Рейтинг должен быть числом.")
-        return False
+        try:
+            year = int(year)
+            if year < 1800 or year > 2026:
+                messagebox.showerror("Ошибка", "Год должен быть от 1800 до 2026!")
+                return False
+        except ValueError:
+            messagebox.showerror("Ошибка", "Год должен быть числом!")
+            return False
+        try:
+            rating = float(rating)
+            if rating < 0 or rating > 10:
+                messagebox.showerror("Ошибка", "Рейтинг должен быть от 0 до 10!")
+                return False
+        except ValueError:
+            messagebox.showerror("Ошибка", "Рейтинг должен быть числом!")
+            return False
+        return True
 
-    return True
+    def add_movie(self):
+        title = self.title_entry.get()
+        genre = self.genre_entry.get()
+        year = self.year_entry.get()
+        rating = self.rating_entry.get()
 
-def add_movie():
-    if validate_input():
-        movie = {
-            "title": entry_title.get(),
-            "genre": entry_genre.get(),
-            "year": int(entry_year.get()),
-            "rating": float(entry_rating.get())
-        }
-        movies.append(movie)
-        save_movies(movies)
-        refresh_table()
-        clear_fields()
+        if self.validate_input(title, genre, year, rating):
+            movie = {
+                "title": title,
+                "genre": genre,
+                "year": int(year),
+                "rating": float(rating)
+            }
+            self.movies.append(movie)
+            self.save_movies()
+            self.update_table()
+            self.clear_entries()
 
-def validate_filter_year():
-    """Валидация года для фильтрации"""
-    year_text = entry_filter_year.get().strip()
-    if not year_text:
-        return None
-    if not year_text.isdigit():
-        messagebox.showerror("Ошибка", "Год для фильтрации должен быть числом.")
-        return None
-    year = int(year_text)
-    if not (1800 <= year <= 2100):
-        messagebox.showerror("Ошибка", "Год для фильтрации должен быть от 1800 до 2100.")
-        return None
-    return year
+    def clear_entries(self):
+        self.title_entry.delete(0, tk.END)
+        self.genre_entry.delete(0, tk.END)
+        self.year_entry.delete(0, tk.END)
+        self.rating_entry.delete(0, tk.END)
 
-def apply_filters():
-    genre = entry_filter_genre.get().strip() if entry_filter_genre.get().strip() else None
+    def update_table(self, filtered_movies=None):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        movies_to_show = filtered_movies if filtered_movies else self.movies
+        for movie in movies_to_show:
+            self.tree.insert("", "end", values=(
+                movie["title"], movie["genre"], movie["year"], movie["rating"]
+            ))
 
-    # Валидация года фильтрации
-    year = validate_filter_year()
-    if year is None:  # Если валидация не прошла, выходим
-        return
+    def apply_filters(self):
+        genre_filter = self.filter_genre.get().lower()
+        year_filter = self.filter_year.get()
 
-    refresh_table(genre, year)
+        filtered = self.movies
+        if genre_filter:
+            filtered = [m for m in filtered if genre_filter in m["genre"].lower()]
+        if year_filter:
+            try:
+                year_filter = int(year_filter)
+                filtered = [m for m in filtered if m["year"] == year_filter]
+            except ValueError:
+                messagebox.showerror("Ошибка", "Год фильтра должен быть числом!")
+                return
+        self.update_table(filtered)
 
-def refresh_table(filter_genre=None, filter_year=None):
-    for item in tree.get_children():
-        tree.delete(item)
-    for movie in movies:
-        if filter_genre and movie["genre"].lower() != filter_genre.lower():
-            continue
-        if filter_year and movie["year"] != filter_year:
-            continue
-        tree.insert("", "end", values=(movie["title"], movie["genre"], movie["year"], movie["rating"]))
+    def load_movies(self):
+        try:
+            if os.path.exists("movies.json"):
+                with open("movies.json", "r", encoding="utf-8") as f:
+                    self.movies = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            self.movies = []
 
-def clear_fields():
-    entry_title.delete(0, tk.END)
-    entry_genre.delete(0, tk.END)
-    entry_year.delete(0, tk.END)
-    entry_rating.delete(0, tk.END)
+    def save_movies(self):
+        with open("movies.json", "w", encoding="utf-8") as f:
+            json.dump(self.movies, f, ensure_ascii=False, indent=4)
 
-# Загрузка данных
-movies = load_movies()
-
-# Создание главного окна
-root = tk.Tk()
-root.title("Movie Library")
-root.geometry("800x500")
-
-# Вкладки
-tab_control = ttk.Notebook(root)
-tab_main = ttk.Frame(tab_control)
-tab_filter = ttk.Frame(tab_control)
-tab_control.add(tab_main, text="Добавить фильм")
-tab_control.add(tab_filter, text="Фильтр")
-tab_control.pack(expand=1, fill="both")
-
-# Вкладка "Добавить фильм"
-tk.Label(tab_main, text="Название:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-entry_title = tk.Entry(tab_main, width=40)
-entry_title.grid(row=0, column=1, padx=5, pady=5)
-
-tk.Label(tab_main, text="Жанр:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-entry_genre = tk.Entry(tab_main, width=40)
-entry_genre.grid(row=1, column=1, padx=5, pady=5)
-
-tk.Label(tab_main, text="Год выпуска:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-entry_year = tk.Entry(tab_main, width=40)
-entry_year.grid(row=2, column=1, padx=5, pady=5)
-
-
-tk.Label(tab_main, text="Рейтинг (0-10):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
-entry_rating = tk.Entry(tab_main, width=40)
-entry_rating.grid(row=3, column=1, padx=5, pady=5)
-
-btn_add = ttk.Button(tab_main, text="Добавить фильм", command=add_movie)
-btn_add.grid(row=4, column=0, columnspan=2, pady=10)
-
-# Таблица фильмов
-tree = ttk.Treeview(tab_main, columns=("Title", "Genre", "Year", "Rating"), show="headings")
-tree.heading("Title", text="Название")
-tree.heading("Genre", text="Жанр")
-tree.heading("Year", text="Год")
-tree.heading("Rating", text="Рейтинг")
-tree.grid(row=5, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
-
-
-# Вкладка "Фильтр"
-tk.Label(tab_filter, text="Жанр для фильтрации:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-entry_filter_genre = tk.Entry(tab_filter, width=40)
-entry_filter_genre.grid(row=0, column=1, padx=5, pady=5)
-
-tk.Label(tab_filter, text="Год для фильтрации:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-entry_filter_year = tk.Entry(tab_filter, width=40)
-entry_filter_year.grid(row=1, column=1, padx=5, pady=5)
-
-
-btn_apply = ttk.Button(tab_filter, text="Применить фильтр", command=apply_filters)
-btn_apply.grid(row=2, column=0, columnspan=2, pady=10)
-
-
-refresh_table()
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MovieLibrary(root)
+    root.mainloop()
